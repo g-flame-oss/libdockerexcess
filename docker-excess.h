@@ -1,18 +1,4 @@
 // docker.h
-// Single-header Docker Engine SDK (Unix socket) for C
-// Requires: libcurl (with UNIX socket support) and json-c
-//
-// Usage:
-//   #define DOCKER_IMPLEMENTATION
-//   #include "docker.h"
-//
-//   Compile: gcc myprog.c -lcurl -ljson-c
-//
-// Goals:
-// - Simple low-level HTTP helpers over the Docker unix socket
-// - High-level helpers (images, containers, exec) including volume support
-// - Safe-ish memory handling and clear, documented API
-// - Single-header (implementation compiled by defining DOCKER_IMPLEMENTATION)
 
 #ifndef DOCKER_H
 #define DOCKER_H
@@ -124,7 +110,7 @@ int docker_parse_id_from_response(const char *response_body, char *out_id, size_
 #endif
 
 /* ----------------- Implementation ----------------- */
-#ifdef DOCKER_IMPLEMENTATION
+#ifdef DOCKER_EXCESS
 
 #include <errno.h>
 #include <stdarg.h>
@@ -660,6 +646,6 @@ int docker_parse_id_from_response(const char *response_body, char *out_id, size_
     return 0;
 }
 
-#endif /* DOCKER_IMPLEMENTATION */
+#endif /* DOCKER_EXCESS */
 
 #endif /* DOCKER_H */
