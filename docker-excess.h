@@ -648,4 +648,4 @@ int docker_parse_id_from_response(const char *response_body, char *out_id, size_
 
 #endif /* DOCKER_EXCESS */
 
-#endif /* DOCKER_H */
+#endif /* DOCKER_EXCESS_H */
