@@ -1,23 +1,41 @@
-# Lib Docker Excess
+# Docker Excess SDK for C
 
-A **single-header C SDK** for interacting with the Docker Engine API over a Unix socket.
-Provides both **low-level HTTP primitives** and **high-level helpers** for working with images, containers, and execs.
+A **single-header C SDK** for interacting with the Docker Engine API over a Unix socket.  
+It provides **low-level HTTP primitives** and **high-level helpers** for working with images, containers, and execs.
 
-* Single-header (`docker-excess.h`)
-* Dependencies: [libcurl](https://curl.se/libcurl/) (with Unix socket support) and [json-c](https://github.com/json-c/json-c)
-* Style: simple API, safe(ish) memory handling
-* Target: Linux/Unix with `/var/run/docker.sock`
+- Single-header (`docker-excess.h`)
+- Dependencies: [libcurl](https://curl.se/libcurl/) (with Unix socket support) and [json-c](https://github.com/json-c/json-c)
+- Designed for Linux/Unix with `/var/run/docker.sock`
+
+---
+
+## Table of Contents
+
+- [Quick Start](#quick-start)  
+- [API Overview](#api-overview)  
+  - [Lifecycle](#lifecycle)  
+  - [Config](#config)  
+  - [Diagnostics](#diagnostics)  
+  - [Low-Level HTTP](#low-level-http)  
+  - [High-Level Helpers](#high-level-helpers)  
+    - [Images](#images)  
+    - [Containers](#containers)  
+    - [Exec](#exec)  
+    - [Utilities](#utilities)  
+- [Example](#example)  
+- [Notes](#notes)  
+- [Contributing](#contributing)  
+- [Credits](#credits)  
 
 ---
 
 ## Quick Start
 
 ### Add the header
-
 ```c
 #define DOCKER_EXCESS
 #include "docker-excess.h"
-```
+````
 
 ### Build
 
@@ -75,13 +93,13 @@ CURLcode docker_delete(DOCKER *cli, const char *url, long *http_status);
 
 ### High-Level Helpers
 
-**Images**
+#### Images
 
 ```c
 int docker_pull_image(DOCKER *cli, const char *image);
 ```
 
-**Containers**
+#### Containers
 
 ```c
 json_object *docker_build_container_config(
@@ -102,7 +120,7 @@ int docker_list_containers   (DOCKER *cli, int all, json_object **out_json);
 int docker_inspect_container (DOCKER *cli, const char *id, json_object **out_json);
 ```
 
-**Exec**
+#### Exec
 
 ```c
 int docker_exec_create(DOCKER *cli, const char *container_id,
@@ -114,7 +132,7 @@ int docker_exec_create(DOCKER *cli, const char *container_id,
 int docker_exec_start(DOCKER *cli, const char *exec_id, char **out_output);
 ```
 
-**Utilities**
+#### Utilities
 
 ```c
 int docker_parse_id_from_response(const char *response_body,
@@ -177,3 +195,28 @@ int main(void) {
 * Default max response size: **16 MB**
 * Caller must manage `json_object` lifetimes (`json_object_put`)
 * `docker_exec_start` returns raw multiplexed output (stdout/stderr combined)
+
+---
+
+## Contributing
+
+Contributions are welcome. Please follow these guidelines:
+
+* **Style**: stick to C99, `-Wall -Wextra` clean builds
+* **Memory**: free everything you allocate, handle `json_object` refcounts properly
+* **Testing**: run code against a local Docker daemon before submitting
+* **Commits**: write clear messages and keep patches focused
+* **PRs**: open against `main` branch, describe the change and rationale
+
+If you add new API helpers, include an example in the README or under `examples/`.
+
+---
+
+## Credits
+
+Maintained by:
+
+* [@g-flame](https://github.com/g-flame)
+* [g-flame-oss](https://github.com/g-flame-oss)
+
+Community contributions are encouraged.
