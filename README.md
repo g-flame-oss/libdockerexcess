@@ -25,7 +25,8 @@ It provides **low-level HTTP primitives** and **high-level helpers** for working
 - [Example](#example)  
 - [Notes](#notes)  
 - [Contributing](#contributing)  
-- [Credits](#credits)  
+- [Credits](#credits)
+- [License](#License)
 
 ---
 
@@ -220,3 +221,9 @@ Maintained by:
 * [g-flame-oss](https://github.com/g-flame-oss)
 
 Community contributions are encouraged.
+
+## License
+
+This project is licensed under the MIT License. See the full license text below:
+
+
