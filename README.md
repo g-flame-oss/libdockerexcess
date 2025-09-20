@@ -1,19 +1,11 @@
 # docker-excess
 
 A modern, thread-safe C library for the Docker Engine API with comprehensive container, image, and network management capabilities.
+### **Documentation**: [API Docs](https://g-flame-oss.github.io/docker-excess/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](#)
 
-## Why docker-excess?
-
-Most Docker C libraries are either incomplete, unmaintained, or lack proper error handling. docker-excess provides:
-
-- **Complete API coverage** - All major Docker operations supported
-- **Thread-safe by design** - Use from multiple threads without worry  
-- **Robust error handling** - Detailed error codes and messages
-- **Memory safe** - No leaks, proper cleanup helpers
-- **Production ready** - Used in real-world applications
 
 ## Quick Start
 
@@ -500,9 +492,5 @@ MIT License - see [LICENSE](LICENSE) file.
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/G-flame-OSS/docker-excess/issues)
-- **Documentation**: [API Docs](https://g-flame-oss.github.io/docker-excess/)
-- **Examples**: See [examples/](examples/) directory
-
 ---
 
-**Need help?** Check the [examples](examples/) directory for complete working programs.
