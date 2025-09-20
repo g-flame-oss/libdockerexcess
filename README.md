@@ -1,4 +1,4 @@
-# docker-excess
+# libdockerexcess
 
 A modern, thread-safe C library for the Docker Engine API with comprehensive container, image, and network management capabilities.
 ### **Documentation**: [API Docs](https://g-flame-oss.github.io/docker-excess/)
