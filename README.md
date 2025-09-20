@@ -1,668 +1,508 @@
-# Docker-excess (Enhanced C Docker SDK)
+# docker-excess
 
-**Version:** `2.0.0`  
-A robust, thread-safe, low-level C client for the Docker Engine API with comprehensive functionality and improved error handling.
+A modern, thread-safe C library for the Docker Engine API with comprehensive container, image, and network management capabilities.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#build)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](#)
 
-## 🚀 Key Improvements in v2.0
+## Why docker-excess?
 
-- **Enhanced Error Handling**: Comprehensive error codes and detailed error messages
-- **Thread Safety**: Full thread-safe implementation with proper mutex locking
-- **Memory Management**: Improved memory handling with leak prevention
-- **Better API Design**: More intuitive function signatures and parameter structures
-- **Extended Functionality**: Support for all major Docker API operations
-- **Logging System**: Configurable logging with callback support
-- **Robust Configuration**: Enhanced configuration options with environment support
-- **Documentation**: Comprehensive examples and API documentation
+Most Docker C libraries are either incomplete, unmaintained, or lack proper error handling. docker-excess provides:
 
----
+- **Complete API coverage** - All major Docker operations supported
+- **Thread-safe by design** - Use from multiple threads without worry  
+- **Robust error handling** - Detailed error codes and messages
+- **Memory safe** - No leaks, proper cleanup helpers
+- **Production ready** - Used in real-world applications
 
-## 📋 Table of Contents
+## Quick Start
 
-1. [Features](#features)
-2. [Installation](#installation)
-3. [Quick Start](#quick-start)
-4. [API Reference](#api-reference)
-5. [Examples](#examples)
-6. [Configuration](#configuration)
-7. [Error Handling](#error-handling)
-8. [Thread Safety](#thread-safety)
-9. [Building from Source](#building-from-source)
-10. [Contributing](#contributing)
-11. [License](#license)
+### Installation
 
----
-
-## ✨ Features
-
-### Core Functionality
-- ✅ **Container Management**: Create, start, stop, remove, inspect containers
-- ✅ **Image Operations**: Pull, push, build, remove, inspect images
-- ✅ **Network Management**: Create, remove, connect/disconnect networks
-- ✅ **Volume Management**: Create, remove, inspect volumes
-- ✅ **File Operations**: Copy files, read/write content, list directories
-- ✅ **Command Execution**: Execute commands in containers with real-time output
-- ✅ **Log Streaming**: Stream container logs with filtering options
-- ✅ **System Information**: Get Docker version, system info, events
-
-### Advanced Features
-- 🔒 **Thread-Safe**: All operations are thread-safe with proper locking
-- 🚨 **Comprehensive Error Handling**: Detailed error codes and messages
-- 📊 **Progress Callbacks**: Real-time progress for long-running operations
-- 🔧 **Flexible Configuration**: Support for Unix sockets, TCP, TLS
-- 📝 **Logging System**: Configurable logging with custom callbacks
-- 🏷️ **Resource Filtering**: Advanced filtering for lists and searches
-- 💾 **Memory Safe**: Proper memory management with helper functions
-- ⚡ **Performance Optimized**: Efficient HTTP handling and JSON parsing
-
-### Connection Options
-- 🔌 **Unix Socket**: Default connection via `/var/run/docker.sock`
-- 🌐 **TCP/HTTP**: Remote Docker daemon connections
-- 🔐 **TLS Support**: Secure connections with certificate authentication
-- 🌍 **Environment Variables**: Auto-configuration from Docker environment
-
----
-
-## 📦 Installation
-
-### Package Managers
-
-#### Ubuntu/Debian
+**Ubuntu/Debian:**
 ```bash
-# Install dependencies
-sudo apt-get update
-sudo apt-get install libcurl4-openssl-dev libjson-c-dev
-
-# Install from source (see Building section)
-```
-
-#### CentOS/RHEL/Fedora
-```bash
-# Install dependencies
-sudo yum install libcurl-devel json-c-devel  # CentOS/RHEL
-sudo dnf install libcurl-devel json-c-devel  # Fedora
-
-# Install from source (see Building section)
-```
-
-#### macOS
-```bash
-# Install dependencies via Homebrew
-brew install curl json-c
-
-# Install from source (see Building section)
-```
-
-### From Source
-```bash
+sudo apt-get install libcurl4-openssl-dev libjson-c-dev cmake build-essential
 git clone https://github.com/G-flame-OSS/docker-excess.git
-cd docker-excess
-mkdir build && cd build
-cmake ..
-make -j$(nproc)
-sudo make install
+cd docker-excess && mkdir build && cd build
+cmake .. && make -j$(nproc) && sudo make install
 ```
 
----
+**CentOS/RHEL/Fedora:**
+```bash
+sudo dnf install libcurl-devel json-c-devel cmake gcc  # Fedora
+# sudo yum install libcurl-devel json-c-devel cmake gcc  # CentOS/RHEL
+git clone https://github.com/G-flame-OSS/docker-excess.git
+cd docker-excess && mkdir build && cd build
+cmake .. && make -j$(nproc) && sudo make install
+```
 
-## 🚀 Quick Start
-
-### Basic Usage
+### Hello Docker
 
 ```c
 #include <docker-excess.h>
-#include <stdio.h>
 
 int main() {
     docker_excess_t *client;
     
-    // Create client
+    // Connect to Docker
     if (docker_excess_new(&client) != DOCKER_EXCESS_OK) {
-        fprintf(stderr, "Failed to create Docker client\n");
+        printf("Failed to create client\n");
         return 1;
     }
-
+    
     // Test connection
     if (docker_excess_ping(client) != DOCKER_EXCESS_OK) {
-        fprintf(stderr, "Cannot connect to Docker: %s\n", 
-                docker_excess_get_error(client));
+        printf("Docker not available: %s\n", docker_excess_get_error(client));
         docker_excess_free(client);
         return 1;
     }
-
-    printf("✓ Connected to Docker daemon\n");
-
-    // List containers
-    docker_excess_container_t **containers;
-    size_t count;
     
-    if (docker_excess_list_containers(client, true, NULL, &containers, &count) == DOCKER_EXCESS_OK) {
-        printf("Found %zu containers:\n", count);
-        for (size_t i = 0; i < count; i++) {
-            printf("  %s (%s)\n", 
-                   containers[i]->name ? containers[i]->name : "unnamed",
-                   containers[i]->short_id);
-        }
-        docker_excess_free_containers(containers, count);
-    }
-
+    printf("✓ Connected to Docker\n");
     docker_excess_free(client);
     return 0;
 }
 ```
 
-### Compile and Run
-```bash
-gcc -o example example.c -ldocker-excess -lcurl -ljson-c -lpthread
-./example
+Compile with: `gcc -o hello hello.c -ldocker-excess`
+
+## Core Concepts
+
+### Client Management
+
+```c
+// Default client (uses /var/run/docker.sock)
+docker_excess_t *client;
+docker_excess_new(&client);
+
+// Custom configuration
+docker_excess_config_t config = docker_excess_default_config();
+config.host = strdup("192.168.1.100");
+config.port = 2376;
+config.timeout_s = 60;
+docker_excess_new_with_config(&config, &client);
+
+// Always cleanup
+docker_excess_free(client);
 ```
 
----
+### Error Handling
 
-## 📖 API Reference
+Every function returns a `docker_excess_error_t`. Always check it:
 
-### Core Functions
-
-#### Client Management
 ```c
-// Create new client with default config
-docker_excess_error_t docker_excess_new(docker_excess_t **client);
-
-// Create client with custom config
-docker_excess_error_t docker_excess_new_with_config(
-    const docker_excess_config_t *config, 
-    docker_excess_t **client);
-
-// Free client resources
-void docker_excess_free(docker_excess_t *client);
-
-// Test connection
-docker_excess_error_t docker_excess_ping(docker_excess_t *client);
+docker_excess_error_t err = docker_excess_start_container(client, "my-container");
+if (err != DOCKER_EXCESS_OK) {
+    printf("Error: %s\n", docker_excess_error_string(err));
+    printf("Details: %s\n", docker_excess_get_error(client));
+}
 ```
 
-#### Container Operations
-```c
-// List containers with optional filtering
-docker_excess_error_t docker_excess_list_containers(
-    docker_excess_t *client, 
-    bool all,
-    const char *filters,  // JSON filters
-    docker_excess_container_t ***containers, 
-    size_t *count);
+## Common Operations
 
-// Create container with parameters
-docker_excess_error_t docker_excess_create_container(
-    docker_excess_t *client,
-    const docker_excess_container_create_t *params,
-    char **container_id);
+### List and Manage Containers
+
+```c
+// List all containers (running + stopped)
+docker_excess_container_t **containers;
+size_t count;
+
+if (docker_excess_list_containers(client, true, NULL, &containers, &count) == DOCKER_EXCESS_OK) {
+    for (size_t i = 0; i < count; i++) {
+        printf("Container: %s (%s) - %s\n", 
+               containers[i]->name, 
+               containers[i]->short_id,
+               containers[i]->status);
+    }
+    docker_excess_free_containers(containers, count);
+}
 
 // Container lifecycle
-docker_excess_error_t docker_excess_start_container(docker_excess_t *client, const char *id);
-docker_excess_error_t docker_excess_stop_container(docker_excess_t *client, const char *id, int timeout);
-docker_excess_error_t docker_excess_restart_container(docker_excess_t *client, const char *id);
-docker_excess_error_t docker_excess_remove_container(docker_excess_t *client, const char *id, bool force, bool remove_volumes);
+docker_excess_start_container(client, "container-id");
+docker_excess_stop_container(client, "container-id", 10); // 10s timeout
+docker_excess_remove_container(client, "container-id", false, false);
 ```
 
-#### Image Operations
+### Create and Run Containers
+
 ```c
-// List images
-docker_excess_error_t docker_excess_list_images(
-    docker_excess_t *client, 
-    bool all,
-    const char *filters,
-    docker_excess_image_t ***images, 
-    size_t *count);
+// Simple container creation
+docker_excess_container_create_t *params = docker_excess_container_create_new("nginx:alpine");
+params->name = strdup("my-nginx");
 
-// Pull image with progress callback
-docker_excess_error_t docker_excess_pull_image(
-    docker_excess_t *client, 
-    const char *image_name, 
-    const char *tag,
-    docker_excess_progress_callback_t callback, 
-    void *userdata);
-
-// Build image
-docker_excess_error_t docker_excess_build_image(
-    docker_excess_t *client,
-    const docker_excess_image_build_t *params,
-    docker_excess_progress_callback_t callback,
-    void *userdata);
+char *container_id;
+if (docker_excess_create_container(client, params, &container_id) == DOCKER_EXCESS_OK) {
+    docker_excess_start_container(client, container_id);
+    printf("Started container: %s\n", container_id);
+    free(container_id);
+}
+docker_excess_container_create_free(params);
 ```
-
-#### File Operations
-```c
-// List files in container
-docker_excess_error_t docker_excess_list_files(
-    docker_excess_t *client,
-    const char *container_id,
-    const char *path,
-    bool recursive,
-    docker_excess_file_t ***files,
-    size_t *count);
-
-// Read/write files
-docker_excess_error_t docker_excess_read_file(
-    docker_excess_t *client,
-    const char *container_id,
-    const char *file_path,
-    char **content,
-    size_t *size);
-
-docker_excess_error_t docker_excess_write_file(
-    docker_excess_t *client,
-    const char *container_id,
-    const char *file_path,
-    const char *content,
-    size_t size,
-    uint32_t mode);
-```
-
-### Data Structures
-
-#### Container Creation Parameters
-```c
-typedef struct {
-    // Basic settings
-    char *name;                     // Container name
-    char *image;                    // Image name (required)
-    char **cmd;                     // Command array
-    size_t cmd_count;
-    char *working_dir;              // Working directory
-    char *user;                     // User to run as
-    
-    // Environment and labels
-    docker_excess_env_var_t *env;   // Environment variables
-    size_t env_count;
-    char **labels;                  // Labels array
-    size_t labels_count;
-    
-    // Network and ports
-    docker_excess_port_mapping_t *ports;
-    size_t ports_count;
-    char **networks;                // Networks to connect
-    size_t networks_count;
-    
-    // Storage
-    docker_excess_mount_t *mounts;
-    size_t mounts_count;
-    
-    // Runtime options
-    int64_t memory_limit;           // Memory limit in bytes
-    double cpu_shares;              // CPU shares
-    bool privileged;                // Privileged mode
-    bool auto_remove;               // Auto-remove when stopped
-    bool detach;                    // Run detached
-    
-    // Health check
-    char **health_cmd;
-    size_t health_cmd_count;
-    int health_interval_s;
-    int health_timeout_s;
-    int health_retries;
-} docker_excess_container_create_t;
-```
-
----
-
-## 💡 Examples
 
 ### Advanced Container Creation
-```c
-// Create advanced container with all options
-docker_excess_container_create_t *params = docker_excess_container_create_new("nginx:alpine");
 
-// Basic configuration
-params->name = strdup("my-web-server");
-params->hostname = strdup("web01");
+```c
+docker_excess_container_create_t *params = docker_excess_container_create_new("postgres:13");
+params->name = strdup("my-postgres");
 
 // Environment variables
 params->env = malloc(2 * sizeof(docker_excess_env_var_t));
-params->env[0].name = strdup("NGINX_PORT");
-params->env[0].value = strdup("8080");
-params->env[1].name = strdup("DEBUG");
-params->env[1].value = strdup("1");
+params->env[0] = (docker_excess_env_var_t){"POSTGRES_PASSWORD", "secret123"};
+params->env[1] = (docker_excess_env_var_t){"POSTGRES_DB", "myapp"};
 params->env_count = 2;
 
-// Port mappings
+// Port mapping
 params->ports = malloc(sizeof(docker_excess_port_mapping_t));
-params->ports[0].host_port = 8080;
-params->ports[0].container_port = 80;
-params->ports[0].protocol = strdup("tcp");
+params->ports[0] = (docker_excess_port_mapping_t){5432, 5432, "tcp", NULL};
 params->ports_count = 1;
 
-// Volume mounts
+// Volume mount
 params->mounts = malloc(sizeof(docker_excess_mount_t));
-params->mounts[0].source = strdup("/host/data");
-params->mounts[0].target = strdup("/usr/share/nginx/html");
-params->mounts[0].type = strdup("bind");
-params->mounts[0].read_only = false;
+params->mounts[0] = (docker_excess_mount_t){
+    .source = "/host/postgres-data",
+    .target = "/var/lib/postgresql/data", 
+    .type = "bind",
+    .read_only = false
+};
 params->mounts_count = 1;
 
 // Resource limits
 params->memory_limit = 512 * 1024 * 1024; // 512MB
 params->cpu_shares = 0.5; // 50% CPU
 
-// Create and start container
-char *container_id = NULL;
-if (docker_excess_create_container(client, params, &container_id) == DOCKER_EXCESS_OK) {
-    printf("Created container: %s\n", container_id);
-    docker_excess_start_container(client, container_id);
-    free(container_id);
-}
-
+char *container_id;
+docker_excess_create_container(client, params, &container_id);
 docker_excess_container_create_free(params);
 ```
 
-### Real-time Log Streaming
+### Execute Commands
+
 ```c
-void log_callback(const char *line, bool is_stderr, time_t timestamp, void *userdata) {
-    const char *stream = is_stderr ? "STDERR" : "STDOUT";
-    char *time_str = docker_excess_format_time(timestamp);
-    printf("[%s][%s] %s\n", time_str, stream, line);
-    free(time_str);
-}
+// Simple command execution
+char *stdout_out, *stderr_out;
+int exit_code;
 
-docker_excess_log_params_t log_params = {0};
-log_params.follow = true;           // Follow logs in real-time
-log_params.timestamps = true;       // Include timestamps
-log_params.tail_lines = 100;        // Start with last 100 lines
-
-docker_excess_get_logs(client, container_id, &log_params, log_callback, NULL);
+docker_excess_exec_simple(client, container_id, "ls -la /app", 
+                         &stdout_out, &stderr_out, &exit_code);
+printf("Exit code: %d\n", exit_code);
+printf("Output:\n%s\n", stdout_out);
+free(stdout_out);
+free(stderr_out);
 ```
 
-### Image Building with Progress
+### File Operations
+
 ```c
-void build_progress(const char *status, const char *progress, void *userdata) {
-    printf("Build: %s", status);
-    if (progress) printf(" (%s)", progress);
-    printf("\n");
+// Read file from container
+char *content;
+size_t size;
+if (docker_excess_read_file(client, container_id, "/app/config.txt", &content, &size) == DOCKER_EXCESS_OK) {
+    printf("File content:\n%.*s\n", (int)size, content);
+    free(content);
 }
 
-docker_excess_image_build_t *build_params = docker_excess_image_build_new("./build-context");
-build_params->dockerfile_path = strdup("./Dockerfile");
+// Write file to container
+const char *new_content = "key=value\nother=setting\n";
+docker_excess_write_file(client, container_id, "/app/config.txt", 
+                        new_content, strlen(new_content), 0644);
+
+// List files in container
+docker_excess_file_t **files;
+size_t file_count;
+docker_excess_list_files(client, container_id, "/app", false, &files, &file_count);
+for (size_t i = 0; i < file_count; i++) {
+    printf("%s %s %ld bytes\n", 
+           files[i]->is_dir ? "DIR" : "FILE",
+           files[i]->name, 
+           files[i]->size);
+}
+docker_excess_free_files(files, file_count);
+```
+
+### Stream Logs
+
+```c
+void log_handler(const char *line, bool is_stderr, time_t timestamp, void *userdata) {
+    printf("[%s] %s\n", is_stderr ? "ERR" : "OUT", line);
+}
+
+docker_excess_log_params_t log_params = {
+    .follow = true,        // Stream logs in real-time
+    .timestamps = true,    // Include timestamps  
+    .tail_lines = 100      // Start with last 100 lines
+};
+
+docker_excess_get_logs(client, container_id, &log_params, log_handler, NULL);
+```
+
+### Image Management
+
+```c
+// List images
+docker_excess_image_t **images;
+size_t image_count;
+docker_excess_list_images(client, false, NULL, &images, &image_count);
+
+// Pull image with progress
+void pull_progress(const char *status, const char *progress, void *userdata) {
+    printf("Pull: %s %s\n", status, progress ? progress : "");
+}
+docker_excess_pull_image(client, "ubuntu", "20.04", pull_progress, NULL);
+
+// Build image
+docker_excess_image_build_t *build_params = docker_excess_image_build_new("./my-app");
+build_params->dockerfile_path = strdup("Dockerfile");
 build_params->tag = strdup("my-app:latest");
 build_params->no_cache = false;
-build_params->pull = true;
 
-// Build arguments
-build_params->build_args = malloc(2 * sizeof(char*));
-build_params->build_args[0] = strdup("VERSION=1.0.0");
-build_params->build_args[1] = strdup("ENV=production");
-build_params->build_args_count = 2;
-
-docker_excess_build_image(client, build_params, build_progress, NULL);
+docker_excess_build_image(client, build_params, pull_progress, NULL);
 docker_excess_image_build_free(build_params);
 ```
 
----
+## Configuration Options
 
-## ⚙️ Configuration
+### Connection Types
 
-### Default Configuration
 ```c
+// Unix socket (default)
 docker_excess_config_t config = docker_excess_default_config();
-// Uses: Unix socket at /var/run/docker.sock, 30s timeout
-```
+// Uses /var/run/docker.sock
 
-### Custom Configuration
-```c
-docker_excess_config_t config = docker_excess_default_config();
-
-// Remote Docker daemon
-free(config.socket_path);
-config.socket_path = NULL;
-config.host = strdup("docker.example.com");
+// TCP connection
+config.host = strdup("docker-host.example.com");
 config.port = 2376;
-config.use_tls = true;
-config.timeout_s = 60;
 
-// TLS certificates
+// TLS-secured connection
+config.use_tls = true;
 config.cert_path = strdup("/path/to/cert.pem");
 config.key_path = strdup("/path/to/key.pem");
 config.ca_path = strdup("/path/to/ca.pem");
-
-// Custom logging
-config.log_callback = my_log_callback;
-config.log_userdata = my_context;
-
-docker_excess_t *client;
-docker_excess_new_with_config(&config, &client);
-docker_excess_free_config(&config);
 ```
 
 ### Environment Variables
+
+The library automatically reads Docker environment variables:
+
 ```bash
 export DOCKER_HOST=tcp://docker.example.com:2376
 export DOCKER_TLS_VERIFY=1
 export DOCKER_CERT_PATH=/path/to/certs
+```
 
-# SDK automatically reads these variables
+```c
 docker_excess_config_t config = docker_excess_config_from_env();
+docker_excess_t *client;
+docker_excess_new_with_config(&config, &client);
 ```
 
----
+### Logging
 
-## ❌ Error Handling
-
-### Error Codes
 ```c
-typedef enum {
-    DOCKER_EXCESS_OK = 0,                    // Success
-    DOCKER_EXCESS_ERR_INVALID_PARAM = -1,    // Invalid parameter
-    DOCKER_EXCESS_ERR_MEMORY = -2,           // Memory allocation failed
-    DOCKER_EXCESS_ERR_NETWORK = -3,          // Network error
-    DOCKER_EXCESS_ERR_HTTP = -4,             // HTTP error
-    DOCKER_EXCESS_ERR_JSON = -5,             // JSON parsing error
-    DOCKER_EXCESS_ERR_NOT_FOUND = -6,        // Resource not found
-    DOCKER_EXCESS_ERR_TIMEOUT = -7,          // Operation timeout
-    DOCKER_EXCESS_ERR_INTERNAL = -8,         // Internal error
-    DOCKER_EXCESS_ERR_PERMISSION = -9,       // Permission denied
-    DOCKER_EXCESS_ERR_CONFLICT = -10,        // Resource conflict
-    DOCKER_EXCESS_ERR_ALREADY_EXISTS = -11,  // Resource already exists
-} docker_excess_error_t;
-```
-
-### Error Handling Best Practices
-```c
-docker_excess_error_t err = docker_excess_start_container(client, "container-id");
-
-switch (err) {
-    case DOCKER_EXCESS_OK:
-        printf("Container started successfully\n");
-        break;
-        
-    case DOCKER_EXCESS_ERR_NOT_FOUND:
-        printf("Container not found\n");
-        break;
-        
-    case DOCKER_EXCESS_ERR_CONFLICT:
-        printf("Container is already running\n");
-        break;
-        
-    case DOCKER_EXCESS_ERR_NETWORK:
-        printf("Network error: %s\n", docker_excess_get_error(client));
-        break;
-        
-    default:
-        printf("Error: %s\n", docker_excess_error_string(err));
-        printf("Details: %s\n", docker_excess_get_error(client));
+void my_logger(docker_excess_log_level_t level, const char *message, void *userdata) {
+    const char *level_str[] = {"ERROR", "WARN", "INFO", "DEBUG"};
+    printf("[%s] %s\n", level_str[level], message);
 }
+
+docker_excess_config_t config = docker_excess_default_config();
+config.log_callback = my_logger;
+config.debug = true; // Enable verbose cURL output
 ```
 
----
+## Thread Safety
 
-## 🔒 Thread Safety
-
-All public functions are **fully thread-safe**. Internal operations use proper mutex locking:
+All functions are thread-safe. You can share a single client across threads:
 
 ```c
 #include <pthread.h>
-#include <omp.h>
 
-docker_excess_t *client;
-docker_excess_new(&client);
-
-// Safe to call from multiple threads
-#pragma omp parallel for
-for (int i = 0; i < 10; i++) {
-    docker_excess_ping(client);  // Thread-safe
+void* worker_thread(void *arg) {
+    docker_excess_t *client = (docker_excess_t*)arg;
     
-    // Each thread can safely use the same client
+    // Safe to use client from multiple threads
     docker_excess_container_t **containers;
     size_t count;
     docker_excess_list_containers(client, false, NULL, &containers, &count);
     docker_excess_free_containers(containers, count);
+    
+    return NULL;
 }
 
-docker_excess_free(client);
+int main() {
+    docker_excess_t *client;
+    docker_excess_new(&client);
+    
+    pthread_t threads[4];
+    for (int i = 0; i < 4; i++) {
+        pthread_create(&threads[i], NULL, worker_thread, client);
+    }
+    
+    for (int i = 0; i < 4; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    
+    docker_excess_free(client);
+    return 0;
+}
 ```
 
-### Best Practices for Threading
-- **Single Client**: One client instance can be safely shared across threads
-- **Multiple Clients**: For heavy concurrent usage, consider one client per thread
-- **Error Handling**: Each thread should check errors independently
-- **Memory Management**: Always free resources in the same thread that allocated them
+## Error Reference
 
----
+| Error Code | Description |
+|------------|-------------|
+| `DOCKER_EXCESS_OK` | Operation successful |
+| `DOCKER_EXCESS_ERR_INVALID_PARAM` | Invalid parameter passed |
+| `DOCKER_EXCESS_ERR_MEMORY` | Memory allocation failed |
+| `DOCKER_EXCESS_ERR_NETWORK` | Network/connection error |
+| `DOCKER_EXCESS_ERR_NOT_FOUND` | Container/image/resource not found |
+| `DOCKER_EXCESS_ERR_CONFLICT` | Resource conflict (e.g., container already running) |
+| `DOCKER_EXCESS_ERR_PERMISSION` | Permission denied |
+| `DOCKER_EXCESS_ERR_TIMEOUT` | Operation timed out |
 
-## 🛠 Building from Source
+Always use `docker_excess_get_error(client)` for detailed error messages.
 
-### Prerequisites
-```bash
-# Ubuntu/Debian
-sudo apt-get install build-essential cmake libcurl4-openssl-dev libjson-c-dev
+## Real-World Examples
 
-# CentOS/RHEL
-sudo yum install gcc cmake libcurl-devel json-c-devel
+### Container Health Monitor
 
-# macOS
-brew install cmake curl json-c
+```c
+#include <docker-excess.h>
+#include <unistd.h>
+
+int monitor_container(const char *container_name) {
+    docker_excess_t *client;
+    if (docker_excess_new(&client) != DOCKER_EXCESS_OK) return 1;
+    
+    while (1) {
+        docker_excess_container_t *container;
+        docker_excess_error_t err = docker_excess_inspect_container(client, container_name, &container);
+        
+        if (err == DOCKER_EXCESS_OK) {
+            printf("Container %s: %s\n", container_name, 
+                   container->state == DOCKER_EXCESS_STATE_RUNNING ? "HEALTHY" : "UNHEALTHY");
+            
+            if (container->state == DOCKER_EXCESS_STATE_EXITED) {
+                printf("Container exited with code: %d\n", container->exit_code);
+                docker_excess_start_container(client, container_name);
+            }
+            
+            docker_excess_free_containers(&container, 1);
+        } else {
+            printf("Failed to inspect container: %s\n", docker_excess_get_error(client));
+        }
+        
+        sleep(30);
+    }
+    
+    docker_excess_free(client);
+    return 0;
+}
 ```
 
-### Build Options
-```bash
-git clone https://github.com/G-flame-OSS/docker-excess.git
-cd docker-excess
-mkdir build && cd build
+### Batch Container Operations
 
-# Configure build
+```c
+int stop_all_containers(docker_excess_t *client) {
+    docker_excess_container_t **containers;
+    size_t count;
+    
+    // Get only running containers
+    const char *filters = "{\"status\":[\"running\"]}";
+    if (docker_excess_list_containers(client, false, filters, &containers, &count) != DOCKER_EXCESS_OK) {
+        return -1;
+    }
+    
+    printf("Stopping %zu containers...\n", count);
+    
+    for (size_t i = 0; i < count; i++) {
+        printf("Stopping %s...", containers[i]->name);
+        if (docker_excess_stop_container(client, containers[i]->id, 10) == DOCKER_EXCESS_OK) {
+            printf(" OK\n");
+        } else {
+            printf(" FAILED: %s\n", docker_excess_get_error(client));
+        }
+    }
+    
+    docker_excess_free_containers(containers, count);
+    return 0;
+}
+```
+
+## Build Options
+
+```bash
+# Standard build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# Development build with debugging
 cmake .. \
-    -DDOCKER_EXCESS_BUILD_SHARED=ON \
-    -DDOCKER_EXCESS_BUILD_STATIC=ON \
-    -DDOCKER_EXCESS_BUILD_EXAMPLES=ON \
-    -DDOCKER_EXCESS_BUILD_TESTS=ON \
-    -DCMAKE_BUILD_TYPE=Release
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DDOCKER_EXCESS_BUILD_TESTS=ON \
+  -DDOCKER_EXCESS_ENABLE_ASAN=ON
 
-# Build
-make -j$(nproc)
-
-# Install
-sudo make install
-
-# Run tests
-make test
-
-# Generate documentation (if Doxygen available)
-make doc
+# Custom installation
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
 ```
 
-### CMake Options
-| Option | Default | Description |
-|--------|---------|-------------|
-| `DOCKER_EXCESS_BUILD_SHARED` | ON | Build shared library |
-| `DOCKER_EXCESS_BUILD_STATIC` | ON | Build static library |
-| `DOCKER_EXCESS_BUILD_EXAMPLES` | ON | Build example programs |
-| `DOCKER_EXCESS_BUILD_TESTS` | ON | Build test suite |
-| `DOCKER_EXCESS_ENABLE_ASAN` | OFF | Enable AddressSanitizer |
-| `DOCKER_EXCESS_ENABLE_TSAN` | OFF | Enable ThreadSanitizer |
+### CMake Integration
 
-### Development Build
+```cmake
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(DOCKER_EXCESS REQUIRED docker-excess)
+
+target_link_libraries(your_target ${DOCKER_EXCESS_LIBRARIES})
+target_include_directories(your_target PRIVATE ${DOCKER_EXCESS_INCLUDE_DIRS})
+```
+
+## Performance Tips
+
+1. **Reuse clients** - Creating clients is expensive, reuse them
+2. **Batch operations** - Group multiple container operations together  
+3. **Use filters** - Filter on the Docker daemon rather than client-side
+4. **Stream when possible** - Use streaming APIs for logs and events
+5. **Free resources** - Always use the provided `_free` functions
+
+## Debugging
+
+Enable debug logging to see HTTP requests:
+
+```c
+docker_excess_config_t config = docker_excess_default_config();
+config.debug = true;
+config.log_callback = my_logger;
+```
+
+Use tools like `strace` to debug socket communication:
 ```bash
-# Debug build with sanitizers
-cmake .. \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DDOCKER_EXCESS_ENABLE_ASAN=ON \
-    -DDOCKER_EXCESS_ENABLE_TSAN=OFF
-
-make -j$(nproc)
+strace -e trace=connect,read,write ./your_program
 ```
 
----
+## Contributing
 
-## 📈 Performance Considerations
-
-### Optimization Tips
-- **Connection Pooling**: Reuse client instances when possible
-- **Batch Operations**: Group multiple operations together
-- **Filtering**: Use server-side filtering instead of client-side
-- **Streaming**: Use streaming APIs for large data transfers
-- **Memory**: Always free allocated resources promptly
-
-### Benchmarks
-| Operation | Time (ms) | Memory (KB) |
-|-----------|-----------|-------------|
-| Create Client | 5-10 | 64 |
-| List Containers (100) | 50-100 | 256 |
-| Container Create | 100-200 | 128 |
-| Container Start | 200-500 | 64 |
-| Image Pull (100MB) | 5000-15000 | 1024 |
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Run tests: `make test`
+4. Submit a pull request
 
 ### Development Setup
+
 ```bash
 git clone https://github.com/G-flame-OSS/docker-excess.git
 cd docker-excess
-git checkout -b feature/my-feature
-
-# Make changes...
-
-# Test your changes
 mkdir build && cd build
-cmake .. -DDOCKER_EXCESS_BUILD_TESTS=ON
+cmake .. -DDOCKER_EXCESS_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+make -j$(nproc)
 make test
-
-# Submit pull request
 ```
 
-### Areas for Contribution
-- Additional Docker API endpoints
-- Performance optimizations
-- Platform-specific improvements
-- Documentation and examples
-- Test coverage improvements
-- Language bindings (Python, Go, etc.)
+## License
 
----
+MIT License - see [LICENSE](LICENSE) file.
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [libcurl](https://curl.se/libcurl/) - HTTP client library
-- [json-c](https://github.com/json-c/json-c) - JSON parsing library
-- [Docker Engine API](https://docs.docker.com/engine/api/) - API specification
-- Contributors and users of the docker-excess library
-
----
-
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/G-flame-OSS/docker-excess/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/G-flame-OSS/docker-excess/discussions)
-- **Documentation**: [API Documentation](https://g-flame-oss.github.io/docker-excess/)
+- **Documentation**: [API Docs](https://g-flame-oss.github.io/docker-excess/)
 - **Examples**: See [examples/](examples/) directory
 
 ---
 
-**Happy coding with Docker-excess! 🐳**
+**Need help?** Check the [examples](examples/) directory for complete working programs.
